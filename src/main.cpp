@@ -15,57 +15,34 @@ const int DELTA_Y[4] = {0, -1, 0, 1};
 
 class Node {
 public:
-    int p[2] {};
+    int x;
+    int y;
+    bool isObs;
     int cost;  // cost from start point
 
-    Node () {
-        p[0] = 0;
-        p[1] = 0;
-        flagObs_ = false;
-    }
-    Node (int x, int y) {
-     p[0] = x;
-     p[1] = y;
-     flagObs_ = false;
-    }
-
-    int& operator[] (const int i) {
-        return p[i];
-    }
+    Node() : x(0), y(0), isObs(false), cost(INT_MAX) {}
+    Node(int _x, int _y) : x(_x), y(_y), isObs(false), cost(INT_MAX)  {}
+    Node(int _x, int _y, bool obs_flag) : x(_x), y(_y), isObs(obs_flag) , cost(INT_MAX) {}
 
     bool operator< (const Node& p2) const {
         return cost < p2.cost;
     }
 
     friend ostream&operator<< (ostream& os, const Node& Node) {
-        os << "Node : [" << Node.p[0] << ", " << Node.p[1]<< "]" << endl;
+        os << "Node : [" << Node.x << ", " << Node.y << "]" << endl;
         return os;
     }
-
-    void setObs() {
-        flagObs_ = true;
-    }
-
-    bool isObs() {
-        return flagObs_;
-    }
-
-private:
-    bool flagObs_;
 };
 
 
-class Barrier {
+class Barrier : public Node {
 public:
-    Barrier (int x, int y) : x_(x), y_(y) {}
+    Barrier(int _x, int _y) : Node(_x, _y, true) {}
+
     friend ostream&operator<< (ostream& os, const Barrier& barrier) {
-        os << "Barrier : [" << barrier.x_ << ", " << barrier.y_ << "]" << endl;
+        os << "Barrier : [" << barrier.x<< ", " << barrier.y << "]" << endl;
         return os;
     }
-
-private:
-    int x_;
-    int y_;
 };
 
 class Laser {
@@ -165,13 +142,16 @@ void parseDirectionFromString(string& data, char& direction) {
  * read one pair from the string to a vactor
  * */
 void readOnePair(ifstream& infile, Node& Node, string& data) {
-    for (int i=0; i<2; i++) {
-        infile >> data;
-        int number = 0;
-        parseIntFromString(data, number);
-        Node[i] = number;
-        cout << "check "<< Node[i] << endl;
-    }
+    int number = 0;
+    // read x
+    infile >> data;
+    parseIntFromString(data, number);
+    Node.x = number;
+
+    // read y
+    infile >> data;
+    parseIntFromString(data, number);
+    Node.y = number;
 }
 
 
@@ -187,7 +167,7 @@ void getBarrierCoordinatesFromLine(vector<Barrier>& barriers, string& line) {
         temp = temp.substr(0, temp.length() - 1);
         const char* temp_c = temp.c_str();
         const char* ptr = strchr( temp_c, ',');
-        if (ptr != NULL) {
+        if (ptr != nullptr) {
             // ',' exist in temp, need to parse twice
             string sub_temp1 = temp.substr(0, ptr - temp_c + 1);
             string sub_temp2 = temp.substr(ptr - temp_c + 1);
@@ -284,8 +264,8 @@ void readInputData(const string& problem_file, Node& origin, Node& destination,
     readOnePair(infile, origin, data);
     readOnePair(infile, destination, data);
 
-    cout << "origin: " << origin[0] << ", "<< origin[1] << endl;
-    cout << "destination: " << destination[0] << ", "<< destination[1] << endl;
+    cout << "origin: " << origin.x << ", "<< origin.y << endl;
+    cout << "destination: " << destination.x << ", "<< destination.y << endl;
 
     // read barrier coordinates
     getline(infile, line); // empty line
@@ -335,8 +315,8 @@ int main() {
     while (!node_q.empty()) {
         Node curr = node_q.top(); node_q.pop();
         for (int i=0; i<4; i++) {
-            int nx = curr[0] + DELTA_X[i];
-            int ny = curr[1] + DELTA_Y[i];
+            int nx = curr.x + DELTA_X[i];
+            int ny = curr.y + DELTA_Y[i];
         }
     }
 
