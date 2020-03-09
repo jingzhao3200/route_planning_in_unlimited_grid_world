@@ -12,24 +12,27 @@ using namespace std;
 
 const int DELTA_X[4] = {-1, 0, 1, 0};
 const int DELTA_Y[4] = {0, -1, 0, 1};
+const int MAX_COST = 1e8;
 
 class Node {
  public:
   int x;
   int y;
   bool isObs;
-  int cost;  // cost from start point
+  int gcost;  // gcost: real cost from start point
+  int fcost;  // fcost: eva cost in open
+//  int hcost;  // hcost: heuristic cost to destination
   bool closed;
 
-  Node() : x(0), y(0), isObs(false), cost(INT_MAX), closed(false) {}
-  Node(int _x, int _y) : x(_x), y(_y), isObs(false), cost(INT_MAX) {}
-  Node(int _x, int _y, bool obs_flag) : x(_x), y(_y), isObs(obs_flag), cost(INT_MAX) {}
+  Node() : x(0), y(0), isObs(false), gcost(MAX_COST), fcost(MAX_COST), closed(false) {}
+  Node(int _x, int _y) : x(_x), y(_y), isObs(false), gcost(MAX_COST), fcost(MAX_COST),closed(false){}
+  Node(int _x, int _y, bool obs_flag) : x(_x), y(_y), isObs(obs_flag), gcost(MAX_COST), fcost(MAX_COST), closed(false){}
 
   bool operator<(const Node &p2) const {
-      return cost < p2.cost;
+      return fcost < p2.fcost;
   }
   bool operator>(const Node &p2) const {
-      return cost > p2.cost;
+      return fcost > p2.fcost;
   }
 
   friend ostream &operator<<(ostream &os, const Node &Node) {
@@ -298,6 +301,10 @@ void readInputData(const string &problem_file, Node &origin, Node &destination,
     }
 }
 
+int MahattanDistance(Node& n1, Node& n2) {
+    return abs(n1.x - n2.x) + abs(n1.y - n2.y);
+}
+
 bool isBarrier(const Node& node, const vector<Barrier>& barriers) {
     for (Barrier b : barriers) {
         if (b == node) return true;
@@ -319,15 +326,15 @@ int main() {
     // first version: only have minimum path
     priority_queue<Node, vector<Node>, greater<Node>> open;
 
-    origin.cost = 0;
+    origin.gcost = 0;
     open.push(origin);
 
     int cnt = 0;
-    while (!open.empty() && cnt < 200) {
+    while (!open.empty() && cnt < 1000) {
         cnt++;
         Node curr = open.top(); open.pop();
         curr.closed = true;
-        cout << "curr" << curr << " cost = "<< curr.cost << endl;
+        cout << "curr" << curr << " fcost = "<< curr.gcost << ", "<< cnt <<  endl;
         // check if reached
         if (curr == destination) {
             cout << "reached!" << endl;
@@ -341,10 +348,13 @@ int main() {
             // only check if obs
             Node next = Node(nx, ny);
             if (!next.closed && !isBarrier(next, barriers)) {
-//                cout << "add next : " << next;
-                next.cost = curr.cost + 1;
-                open.push(next);
-
+                // update gcost and put to open list
+                if (next.gcost > curr.gcost + 1) {
+                    next.gcost = curr.gcost + 1;
+                    next.fcost = next.gcost + MahattanDistance(next, destination);
+                    open.push(next);
+                    // cout << "add next : " << next;
+                }
             }
 
             
