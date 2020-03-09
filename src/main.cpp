@@ -7,12 +7,19 @@
 #include <string.h>
 #include <queue>
 #include <cstdlib>
+#include <unordered_set>
 
 using namespace std;
 
 const int DELTA_X[4] = {-1, 0, 1, 0};
 const int DELTA_Y[4] = {0, -1, 0, 1};
 const int MAX_COST = 1e8;
+
+struct pair_hash {
+  size_t operator()(const pair<int, int> &pair) const {
+      return hash<int>()(pair.first) ^ hash<int>()(pair.second);
+  }
+};
 
 class Node {
  public:
@@ -22,11 +29,13 @@ class Node {
   int gcost;  // gcost: real cost from start point
   int fcost;  // fcost: eva cost in open
 //  int hcost;  // hcost: heuristic cost to destination
-  bool closed;
+  bool visited;
+  Node *prev;
 
-  Node() : x(0), y(0), isObs(false), gcost(MAX_COST), fcost(MAX_COST), closed(false) {}
-  Node(int _x, int _y) : x(_x), y(_y), isObs(false), gcost(MAX_COST), fcost(MAX_COST),closed(false){}
-  Node(int _x, int _y, bool obs_flag) : x(_x), y(_y), isObs(obs_flag), gcost(MAX_COST), fcost(MAX_COST), closed(false){}
+  Node() : x(0), y(0), isObs(false), gcost(MAX_COST), fcost(MAX_COST), visited(false), prev(nullptr) {}
+  Node(int _x, int _y) : x(_x), y(_y), isObs(false), gcost(MAX_COST), fcost(MAX_COST), visited(false), prev(nullptr) {}
+  Node(int _x, int _y, bool obs_flag) : x(_x), y(_y), isObs(obs_flag), gcost(MAX_COST), fcost(MAX_COST), visited
+          (false), prev(nullptr) {}
 
   bool operator<(const Node &p2) const {
       return fcost < p2.fcost;
@@ -39,9 +48,18 @@ class Node {
       os << "Node : [" << Node.x << ", " << Node.y << "]" << endl;
       return os;
   }
-  
-  bool operator== (const Node& rhs) {
+
+  bool operator==(const Node &rhs) {
       return (this->x == rhs.x && this->y == rhs.y);
+  }
+  bool operator==(const Node *rhs) {
+      return (this->x == rhs->x && this->y == rhs->y);
+  }
+};
+
+struct node_hash {
+  size_t operator()(const Node *node) const {
+      return hash<int>()(node->x * 31) ^ hash<int>()(node->y);
   }
 };
 
@@ -150,20 +168,20 @@ void parseDirectionFromString(string &data, char &direction) {
 /*
  * read one pair from the string to a vactor
  * */
-void readOnePair(ifstream &infile, Node &Node, string &data) {
+void readOnePair(ifstream &infile, Node *Node, string &data) {
     int number = 0;
     // read x
     infile >> data;
     parseIntFromString(data, number);
-    Node.x = number;
+    Node->x = number;
 
     // read y
     infile >> data;
     parseIntFromString(data, number);
-    Node.y = number;
+    Node->y = number;
 }
 
-void getBarrierCoordinatesFromLine(vector<Barrier> &barriers, string &line) {
+void getBarrierCoordinatesFromLine(vector<Barrier *> barriers, string &line) {
     istringstream instr(line);
     string temp;
     int number;
@@ -195,15 +213,15 @@ void getBarrierCoordinatesFromLine(vector<Barrier> &barriers, string &line) {
         }
 
         if ((i + 1) % 2 == 0) {
-            Barrier barrier = Barrier(barrier_coordinates[i % 2 - 1], barrier_coordinates[i % 2]);
+            Barrier *barrier = new Barrier(barrier_coordinates[i % 2 - 1], barrier_coordinates[i % 2]);
             barriers.push_back(barrier);
-            cout << barrier;
+            cout << *barrier;
         }
         i++;
     }
 }
 
-void getLaserCoordinatesFromLine(vector<Laser> &lasers, string &line) {
+void getLaserCoordinatesFromLine(vector<Laser *> lasers, string &line) {
     istringstream instr(line);
     string temp;
     int number;
@@ -219,17 +237,16 @@ void getLaserCoordinatesFromLine(vector<Laser> &lasers, string &line) {
         } else {
             parseDirectionFromString(temp, direction);
             laser_coordinates[i % 3] = direction;
-            Laser laser_ptr =
-                    Laser(laser_coordinates[i % 3 - 2], laser_coordinates[i % 3 - 1], 
-                            laser_coordinates[i % 3]);
+            Laser *laser_ptr = new Laser(laser_coordinates[i % 3 - 2], laser_coordinates[i % 3 - 1],
+                                         laser_coordinates[i % 3]);
             lasers.push_back(laser_ptr);
-            cout << laser_ptr;
+            cout << *laser_ptr;
         }
         i++;
     }
 }
 
-void getHolesCoordinatesFromLine(vector<Holes> &holes, string &line) {
+void getHolesCoordinatesFromLine(vector<Holes *> holes, string &line) {
     istringstream instr(line);
     string temp;
     int number;
@@ -242,10 +259,10 @@ void getHolesCoordinatesFromLine(vector<Holes> &holes, string &line) {
         hole_coordinates[i % 4] = number;
 //        cout << number << endl;
         if ((i + 1) % 4 == 0 && i != 0) {
-            Holes hole = Holes(hole_coordinates[i % 4 - 3], hole_coordinates[i % 4 - 2],
-                               hole_coordinates[i % 4 - 1], hole_coordinates[i % 4]);
+            Holes *hole = new Holes(hole_coordinates[i % 4 - 3], hole_coordinates[i % 4 - 2],
+                                    hole_coordinates[i % 4 - 1], hole_coordinates[i % 4]);
             holes.push_back(hole);
-            cout << hole;
+            cout << *hole;
         }
         i++;
     }
@@ -254,8 +271,8 @@ void getHolesCoordinatesFromLine(vector<Holes> &holes, string &line) {
 /*
  * readInputData: read the problem file
  * */
-void readInputData(const string &problem_file, Node &origin, Node &destination,
-                   vector<Barrier> &barriers, vector<Laser> &lasers, vector<Holes> &holes) {
+void readInputData(const string &problem_file, Node *origin, Node *destination,
+                   vector<Barrier *> &barriers, vector<Laser *> &lasers, vector<Holes *> &holes) {
 
     ifstream infile;
     string line;
@@ -271,8 +288,8 @@ void readInputData(const string &problem_file, Node &origin, Node &destination,
     readOnePair(infile, origin, data);
     readOnePair(infile, destination, data);
 
-    cout << "origin: " << origin.x << ", " << origin.y << endl;
-    cout << "destination: " << destination.x << ", " << destination.y << endl;
+    cout << "origin: " << origin->x << ", " << origin->y << endl;
+    cout << "destination: " << destination->x << ", " << destination->y << endl;
 
     // read barrier coordinates
     getline(infile, line); // empty line
@@ -299,68 +316,122 @@ void readInputData(const string &problem_file, Node &origin, Node &destination,
     } else {
         cout << "no wormholes!" << endl;
     }
+    infile.close();
 }
 
-int MahattanDistance(Node& n1, Node& n2) {
-    return abs(n1.x - n2.x) + abs(n1.y - n2.y);
+int MahattanDistance(Node *n1, Node *n2) {
+    return abs(n1->x - n2->x) + abs(n1->y - n2->y);
 }
 
-bool isBarrier(const Node& node, const vector<Barrier>& barriers) {
-    for (Barrier b : barriers) {
+bool isBarrier(const Node *node, const vector<Barrier *> &barriers) {
+    for (Barrier *b : barriers) {
         if (b == node) return true;
     }
     return false;
 }
 
-int main() {
-
-    Node origin = Node();
-    Node destination = Node();
-    vector<Barrier> barriers;
-    vector<Laser> lasers;
-    vector<Holes> holes;
-
-    const string problem_file = "robot_routing/sample/problem_test.txt";
-    readInputData(problem_file, origin, destination, barriers, lasers, holes);
-
+void findPathAstarWithoutLaserAndHoles(Node *origin, Node *destination,
+                                       vector<Barrier *> &barriers, vector<Laser *> &lasers, vector<Holes *> &holes,
+                                       vector<Node *> &path) {
     // first version: only have minimum path
-    priority_queue<Node, vector<Node>, greater<Node>> open;
+    priority_queue<Node *, vector<Node *>, greater<Node *>> open;
+    unordered_set<pair<int, int>, pair_hash> closed;
 
-    origin.gcost = 0;
+    origin->gcost = 0;
     open.push(origin);
 
     int cnt = 0;
-    while (!open.empty() && cnt < 1000) {
+    bool reach_flag = false;
+    while (!open.empty() && cnt < 500) {
         cnt++;
-        Node curr = open.top(); open.pop();
-        curr.closed = true;
-        cout << "curr" << curr << " fcost = "<< curr.gcost << ", "<< cnt <<  endl;
+        Node *curr = open.top();
+        open.pop();
+//        curr->visited = true;
+        closed.insert(make_pair(curr->x, curr->y));
+//        cout << "curr" << *curr << "fcost = " << curr->gcost << ", expand number = " << cnt << endl;
         // check if reached
-        if (curr == destination) {
+        if (*curr == *destination) {
+            destination = curr;
             cout << "reached!" << endl;
+            reach_flag = true;
             break;
         }
 
         for (int i = 0; i < 4; i++) {
-            int nx = curr.x + DELTA_X[i];
-            int ny = curr.y + DELTA_Y[i];
+            int nx = curr->x + DELTA_X[i];
+            int ny = curr->y + DELTA_Y[i];
             // Assume the grid itself is infinite in size, no need to check boundary condition
             // only check if obs
-            Node next = Node(nx, ny);
-            if (!next.closed && !isBarrier(next, barriers)) {
+            Node *next = new Node(nx, ny);
+            if (closed.count(make_pair(nx, ny)) < 1 && !isBarrier(next, barriers)) {
                 // update gcost and put to open list
-                if (next.gcost > curr.gcost + 1) {
-                    next.gcost = curr.gcost + 1;
-                    next.fcost = next.gcost + MahattanDistance(next, destination);
+                if (next->gcost > curr->gcost + 1) {
+                    next->gcost = curr->gcost + 1;
+                    next->fcost = next->gcost + MahattanDistance(next, destination);
+                    next->prev = curr;
                     open.push(next);
+
                     // cout << "add next : " << next;
                 }
             }
+        } // for i
+    } // while open
 
-            
-            
+    if (!reach_flag) {
+        cout << "can't find path!" << endl;
+    } else {
+        cout << "PATH" << endl;
+        // reconstruct path;
+        Node *curr = destination;
+        path.push_back(curr);
+
+        while (curr->prev) {
+            path.push_back(curr->prev);
+            curr = curr->prev;
+        }
+        // check path
+        reverse(path.begin(), path.end());
+        for (Node *p : path) {
+            cout << *p;
         }
     }
+}
+
+void writePathTofile(const string &solution_file, const vector<Node *> &path) {
+    ofstream outfile(solution_file);
+    string line;
+    string data;
+
+    if (!outfile.is_open()) {
+        cout << "Unable to open " << solution_file << endl;
+        exit(1); // terminate with error
+    }
+    outfile << "[";
+    for (int i = 0; i < path.size(); i++) {
+        outfile << "(" << path[i]->x << ", " << path[i]->y << ")";
+        if (i < path.size() - 1) {
+            outfile << ", ";
+        }
+    }
+    outfile << "]";
+    outfile.close();
+}
+
+int main() {
+
+    Node *origin = new Node();
+    Node *destination = new Node();
+    vector<Barrier *> barriers;
+    vector<Laser *> lasers;
+    vector<Holes *> holes;
+    vector<Node *> path;
+
+    const string problem_file = "robot_routing/sample/problem_test.txt";
+    const string solution_file = "robot_routing/sample/solution_test.txt";
+
+    readInputData(problem_file, origin, destination, barriers, lasers, holes);
+    findPathAstarWithoutLaserAndHoles(origin, destination, barriers, lasers, holes, path);
+    writePathTofile(solution_file, path);
 
     return 0;
 }
