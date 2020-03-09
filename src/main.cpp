@@ -5,8 +5,55 @@
 #include <sstream>
 #include <stdio.h>
 #include <string.h>
+#include <queue>
+#include <cstdlib>
 
 using namespace std;
+
+const int DELTA_X[4] = {-1, 0, 1, 0};
+const int DELTA_Y[4] = {0, -1, 0, 1};
+
+class Node {
+public:
+    int p[2] {};
+    int cost;  // cost from start point
+
+    Node () {
+        p[0] = 0;
+        p[1] = 0;
+        flagObs_ = false;
+    }
+    Node (int x, int y) {
+     p[0] = x;
+     p[1] = y;
+     flagObs_ = false;
+    }
+
+    int& operator[] (const int i) {
+        return p[i];
+    }
+
+    bool operator< (const Node& p2) const {
+        return cost < p2.cost;
+    }
+
+    friend ostream&operator<< (ostream& os, const Node& Node) {
+        os << "Node : [" << Node.p[0] << ", " << Node.p[1]<< "]" << endl;
+        return os;
+    }
+
+    void setObs() {
+        flagObs_ = true;
+    }
+
+    bool isObs() {
+        return flagObs_;
+    }
+
+private:
+    bool flagObs_;
+};
+
 
 class Barrier {
 public:
@@ -59,16 +106,16 @@ private:
 };
 
 
-void parseIntFromString(string& data, int& number, int& pos1, int& pos2) {
+void parseIntFromString(string& data, int& number, int& Node1, int& Node2) {
     // get int from the read data
-    while(!isdigit(data[pos1])) {
-        pos1++;
+    while(!isdigit(data[Node1])) {
+        Node1++;
     }
-    pos2 = pos1;
-    while (isdigit(data[pos2])) {
-        pos2++;
+    Node2 = Node1;
+    while (isdigit(data[Node2])) {
+        Node2++;
     }
-    string sub_data = data.substr(pos1, pos2 - pos1);
+    string sub_data = data.substr(Node1, Node2 - Node1);
     number = stoi(sub_data);
 }
 
@@ -76,60 +123,59 @@ void parseIntFromString(string& data, int& number, int& pos1, int& pos2) {
  * parse integer from string
  * */
 void parseIntFromString(string& data, int& number) {
-    int pos1 = 0;
-    int pos2 = 0;
+    int Node1 = 0;
+    int Node2 = 0;
     // get int from the read data
-    while(!isdigit(data[pos1])) {
-        pos1++;
+    while(!isdigit(data[Node1])) {
+        Node1++;
     }
-    pos2 = pos1;
-    while (isdigit(data[pos2])) {
-        pos2++;
+    Node2 = Node1;
+    while (isdigit(data[Node2])) {
+        Node2++;
     }
-    string sub_data = data.substr(pos1, pos2 - pos1);
+    string sub_data = data.substr(Node1, Node2 - Node1);
     number = stoi(sub_data);
 }
 
 
-void parseDirectionFromString(string& data, char& direction, int& pos1, int& pos2) {
+void parseDirectionFromString(string& data, char& direction, int& Node1, int& Node2) {
     // get int from the read data
-    while (data[pos1] != 39) { // ascii ' is 39
-        pos1++;
+    while (data[Node1] != 39) { // ascii ' is 39
+        Node1++;
     }
-    pos2 = pos1 + 2;
-    direction = data[pos1 + 1];
+    Node2 = Node1 + 2;
+    direction = data[Node1 + 1];
 }
 
 /*
  * parse direction 'N', 'S', 'W', 'E' from string
  * */
 void parseDirectionFromString(string& data, char& direction) {
-    int pos1 = 0;
-    int pos2 = 0;
+    int Node1 = 0;
+    int Node2 = 0;
     // get int from the read data
-    while (data[pos1] != 39) { // ascii ' is 39
-        pos1++;
+    while (data[Node1] != 39) { // ascii ' is 39
+        Node1++;
     }
-    pos2 = pos1 + 2;
-    direction = data[pos1 + 1];
+    Node2 = Node1 + 2;
+    direction = data[Node1 + 1];
 }
 
 /*
  * read one pair from the string to a vactor
  * */
-void readOnePair(ifstream& infile, vector<int>& vec, string& data) {
+void readOnePair(ifstream& infile, Node& Node, string& data) {
     for (int i=0; i<2; i++) {
         infile >> data;
         int number = 0;
-        int pos1 = 0;
-        int pos2 = 0;
         parseIntFromString(data, number);
-        vec.push_back(number);
+        Node[i] = number;
+        cout << "check "<< Node[i] << endl;
     }
 }
 
 
-void getBarrierCoordinatesFromLine(vector<Barrier*>& barriers, string& line) {
+void getBarrierCoordinatesFromLine(vector<Barrier>& barriers, string& line) {
     istringstream instr(line);
     string temp;
     int number;
@@ -162,16 +208,16 @@ void getBarrierCoordinatesFromLine(vector<Barrier*>& barriers, string& line) {
 
 
         if ((i+1) % 2 == 0) {
-            Barrier* barrier = new Barrier(barrier_coordinates[i%2-1],barrier_coordinates[i%2]);
+            Barrier barrier = Barrier(barrier_coordinates[i%2-1],barrier_coordinates[i%2]);
             barriers.push_back(barrier);
-            cout << *barrier;
+            cout << barrier;
         }
         i++;
     }
 }
 
 
-void getLaserCoordinatesFromLine(vector<Laser*>& lasers, string& line) {
+void getLaserCoordinatesFromLine(vector<Laser>& lasers, string& line) {
     istringstream instr(line);
     string temp;
     int number;
@@ -187,16 +233,16 @@ void getLaserCoordinatesFromLine(vector<Laser*>& lasers, string& line) {
         } else {
             parseDirectionFromString(temp, direction);
             laser_coordinates[i%3] = direction;
-            Laser* laser_ptr = new Laser(laser_coordinates[i%3-2], laser_coordinates[i%3-1], laser_coordinates[i%3]);
+            Laser laser_ptr = Laser(laser_coordinates[i%3-2], laser_coordinates[i%3-1], laser_coordinates[i%3]);
             lasers.push_back(laser_ptr);
-            cout << *laser_ptr;
+            cout << laser_ptr;
         }
         i++;
     }
 }
 
 
-void getHolesCoordinatesFromLine(vector<Holes*>& holes, string& line) {
+void getHolesCoordinatesFromLine(vector<Holes>& holes, string& line) {
     istringstream instr(line);
     string temp;
     int number;
@@ -209,10 +255,10 @@ void getHolesCoordinatesFromLine(vector<Holes*>& holes, string& line) {
         hole_coordinates[i%4] = number;
 //        cout << number << endl;
         if ((i+1) % 4 == 0 && i != 0) {
-            Holes* hole = new Holes(hole_coordinates[i%4-3], hole_coordinates[i%4-2],
+            Holes hole = Holes(hole_coordinates[i%4-3], hole_coordinates[i%4-2],
                                     hole_coordinates[i%4-1],hole_coordinates[i%4]);
             holes.push_back(hole);
-            cout << *hole;
+            cout << hole;
         }
         i++;
     }
@@ -221,8 +267,8 @@ void getHolesCoordinatesFromLine(vector<Holes*>& holes, string& line) {
 /*
  * readInputData: read the problem file
  * */
-void readInputData(const string& problem_file, vector<int>& origin, vector<int>& destination,
-        vector<Barrier*>& barriers, vector<Laser*>& lasers, vector<Holes*>& holes) {
+void readInputData(const string& problem_file, Node& origin, Node& destination,
+        vector<Barrier>& barriers, vector<Laser>& lasers, vector<Holes>& holes) {
 
     ifstream infile;
     string line;
@@ -271,13 +317,31 @@ void readInputData(const string& problem_file, vector<int>& origin, vector<int>&
 
 int main() {
 
-    vector<int> origin, destination;
-    vector<Barrier*> barriers;
-    vector<Laser*> lasers;
-    vector<Holes*> holes;
+    Node origin = Node();
+    Node destination = Node();
+    vector<Barrier> barriers;
+    vector<Laser> lasers;
+    vector<Holes> holes;
 
     const string problem_file = "robot_routing/sample/problem_test.txt";
     readInputData(problem_file, origin, destination, barriers, lasers, holes);
+
+    // first version: only have minimum path
+    priority_queue<Node> node_q;
+
+    origin.cost = 0;
+    node_q.push(origin);
+
+    while (!node_q.empty()) {
+        Node curr = node_q.top(); node_q.pop();
+        for (int i=0; i<4; i++) {
+            int nx = curr[0] + DELTA_X[i];
+            int ny = curr[1] + DELTA_Y[i];
+        }
+    }
+
+
+
 
 
 
