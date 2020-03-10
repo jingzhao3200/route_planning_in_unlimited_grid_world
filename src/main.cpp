@@ -14,6 +14,8 @@ using namespace std;
 const int DELTA_X[4] = {-1, 0, 1, 0};
 const int DELTA_Y[4] = {0, -1, 0, 1};
 const int MAX_COST = 1e8;
+const int UPPER_BOUND = 20;
+const int LOWER_BOUND = 0;
 
 struct pair_hash {
   size_t operator()(const pair<int, int> &pair) const {
@@ -73,25 +75,27 @@ class Barrier : public Node {
   }
 };
 
-class Laser {
+class Laser : public Node {
  public:
-  Laser(int x, int y, char direction) : x_(x), y_(y), direction_(direction) {}
+  int x;
+  int y;
+  char direction;
 
-  void set(int x, int y, char direction) {
-      x_ = x;
-      y_ = y;
-      direction_ = direction;
+  Laser(int _x, int _y, char _direction) : x(_x), y(_y), direction(_direction) {}
+
+  void set(int _x, int _y, char _direction) {
+      x = _x;
+      y = _y;
+      direction = _direction;
   }
 
   friend ostream &operator<<(ostream &os, const Laser &laser) {
-      os << "L: (" << laser.x_ << ", " << laser.y_ << ", " << laser.direction_ << ")" << endl;
+      os << "L: (" << laser.x << ", " << laser.y<< ", " << laser.direction << ")" << endl;
       return os;
   }
 
- private:
-  int x_;
-  int y_;
-  char direction_;
+
+
 };
 
 class Holes {
@@ -181,7 +185,7 @@ void readOnePair(ifstream &infile, Node *Node, string &data) {
     Node->y = number;
 }
 
-void getBarrierCoordinatesFromLine(vector<Barrier *> barriers, string &line) {
+void getBarrierCoordinatesFromLine(vector<Barrier *>& barriers, string &line) {
     istringstream instr(line);
     string temp;
     int number;
@@ -221,7 +225,7 @@ void getBarrierCoordinatesFromLine(vector<Barrier *> barriers, string &line) {
     }
 }
 
-void getLaserCoordinatesFromLine(vector<Laser *> lasers, string &line) {
+void getLaserCoordinatesFromLine(vector<Laser *>& lasers, string &line) {
     istringstream instr(line);
     string temp;
     int number;
@@ -325,14 +329,26 @@ int MahattanDistance(Node *n1, Node *n2) {
 
 bool isBarrier(const Node *node, const vector<Barrier *> &barriers) {
     for (Barrier *b : barriers) {
-        if (b == node) return true;
+        if ((b->x == node->x) && (b->y == node->y)) {
+            return true;
+        }
     }
     return false;
 }
 
-void findPathAstarWithoutLaserAndHoles(Node *origin, Node *destination,
+bool isLaser(const Node *node, const vector<Laser *> &laser_path) {
+    for (Laser *lp : laser_path) {
+        if ((lp->x == node->x) && (lp->y == node->y)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void findPathAstarBarriersOnly(Node *origin, Node *destination,
                                        vector<Barrier *> &barriers, vector<Laser *> &lasers, vector<Holes *> &holes,
                                        vector<Node *> &path) {
+
     // first version: only have minimum path
     priority_queue<Node *, vector<Node *>, greater<Node *>> open;
     unordered_set<pair<int, int>, pair_hash> closed;
@@ -342,7 +358,7 @@ void findPathAstarWithoutLaserAndHoles(Node *origin, Node *destination,
 
     int cnt = 0;
     bool reach_flag = false;
-    while (!open.empty() && cnt < 500) {
+    while (!open.empty() && cnt < 1500) {
         cnt++;
         Node *curr = open.top();
         open.pop();
@@ -363,7 +379,8 @@ void findPathAstarWithoutLaserAndHoles(Node *origin, Node *destination,
             // Assume the grid itself is infinite in size, no need to check boundary condition
             // only check if obs
             Node *next = new Node(nx, ny);
-            if (closed.count(make_pair(nx, ny)) < 1 && !isBarrier(next, barriers)) {
+//            cout << *next << isBarrier(next, barriers) << endl;
+            if (closed.count(make_pair(nx, ny)) < 1 && (!isBarrier(next, barriers))) {
                 // update gcost and put to open list
                 if (next->gcost > curr->gcost + 1) {
                     next->gcost = curr->gcost + 1;
@@ -397,6 +414,7 @@ void findPathAstarWithoutLaserAndHoles(Node *origin, Node *destination,
     }
 }
 
+
 void writePathTofile(const string &solution_file, const vector<Node *> &path) {
     ofstream outfile(solution_file);
     string line;
@@ -417,6 +435,114 @@ void writePathTofile(const string &solution_file, const vector<Node *> &path) {
     outfile.close();
 }
 
+void getStaticLaserPath(Laser* laser, vector<Barrier*> barriers, vector<Laser*> laser_path) {
+    laser_path.push_back(laser);
+    int x = laser->x;
+    int y = laser->y;
+    char direction = laser->direction;
+    int dx = 0;
+    int dy = 0;
+    switch (direction) {
+        case 'N': dy = 1;
+                  break;
+        case 'E': dx = 1;
+                  break;
+        case 'S': dy = -1;
+                  break;
+        case 'W': dx = -1;
+                  break;
+        default: cout << "not right direction given!" << endl;
+                 break;
+    }
+
+    while (LOWER_BOUND < y && y < UPPER_BOUND) {
+        x += dx;
+        y += dy;
+        Laser* laser_extend = new Laser(x, y, direction);
+        if (isBarrier(laser_extend, barriers)) {
+            break;
+        }
+        laser_path.push_back(laser_extend);
+    }
+    cout << "laser size = " << laser_path.size() << endl;
+}
+
+
+void findPathAstarWithLasers(Node *origin, Node *destination,
+                             vector<Barrier *> &barriers, vector<Laser *> &lasers, vector<Holes *> &holes,
+                             vector<Node *> &path) {
+    // get laser path
+    vector<Laser*> laser_path;
+    getStaticLaserPath(lasers[0], barriers, laser_path);
+
+    // first version: only have minimum path
+    priority_queue<Node *, vector<Node *>, greater<Node *>> open;
+    unordered_set<pair<int, int>, pair_hash> closed;
+
+    origin->gcost = 0;
+    open.push(origin);
+
+    int cnt = 0;
+    bool reach_flag = false;
+    while (!open.empty() && cnt < 5000) {
+        cnt++;
+        Node *curr = open.top();
+        open.pop();
+//        curr->visited = true;
+        closed.insert(make_pair(curr->x, curr->y));
+//        cout << "curr" << *curr << "fcost = " << curr->gcost << ", expand number = " << cnt << endl;
+        // check if reached
+        if (*curr == *destination) {
+            destination = curr;
+            cout << "reached!" << endl;
+            reach_flag = true;
+            break;
+        }
+
+        for (int i = 0; i < 4; i++) {
+            int nx = curr->x + DELTA_X[i];
+            int ny = curr->y + DELTA_Y[i];
+            // Assume the grid itself is infinite in size, no need to check boundary condition
+            // only check if obs
+            Node *next = new Node(nx, ny);
+//            cout << *next << isBarrier(next, barriers) << endl;
+            if (closed.count(make_pair(nx, ny)) < 1 && (!isBarrier(next, barriers)) && (!isLaser(next, laser_path))) {
+                // update gcost and put to open list
+                if (next->gcost > curr->gcost + 1) {
+                    next->gcost = curr->gcost + 1;
+                    next->fcost = next->gcost + MahattanDistance(next, destination);
+                    next->prev = curr;
+                    open.push(next);
+
+                    // cout << "add next : " << next;
+                }
+            }
+        } // for i
+    } // while open
+
+    if (!reach_flag) {
+        cout << "can't find path!" << endl;
+    } else {
+        cout << "PATH" << endl;
+        // reconstruct path;
+        Node *curr = destination;
+        path.push_back(curr);
+
+        while (curr->prev) {
+            path.push_back(curr->prev);
+            curr = curr->prev;
+        }
+        // check path
+        reverse(path.begin(), path.end());
+        for (Node *p : path) {
+            cout << *p;
+        }
+    }
+
+
+}
+
+
 int main() {
 
     Node *origin = new Node();
@@ -426,11 +552,16 @@ int main() {
     vector<Holes *> holes;
     vector<Node *> path;
 
+
+
     const string problem_file = "robot_routing/sample/problem_test.txt";
     const string solution_file = "robot_routing/sample/solution_test.txt";
 
     readInputData(problem_file, origin, destination, barriers, lasers, holes);
-    findPathAstarWithoutLaserAndHoles(origin, destination, barriers, lasers, holes, path);
+    cout << "bar size = " << barriers.size() << endl;
+//    findPathAstarBarriersOnly(origin, destination, barriers, lasers, holes, path);
+    findPathAstarWithLasers(origin, destination, barriers, lasers, holes, path);
+
     writePathTofile(solution_file, path);
 
     return 0;
