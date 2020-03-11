@@ -8,18 +8,25 @@
 #include <queue>
 #include <cstdlib>
 #include <unordered_set>
+#include <getopt.h>
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 using namespace std;
 
 const int DELTA_X[4] = {-1, 0, 1, 0};
 const int DELTA_Y[4] = {0, -1, 0, 1};
-const int MAX_COST = 1e8;
+const int MAX_COST = 1e6;
+const int LOWER_BOUND = -20;
 const int UPPER_BOUND = 20;
-const int LOWER_BOUND = 0;
 
-const bool LASER_ENABLED = true;
-const bool DYNAMIC_LASER_ENABLED = true;
-const bool WORMHOLES_ENABLED = true;
+
+// global variables: default values for env setting flags
+bool static_laser_enabled = false;
+bool dynamic_laser_enabled = false;
+bool wormholes_enabled = false;
 
 enum laser_direction {
   N, E, S, W
@@ -175,6 +182,8 @@ void parseDirectionFromString(string &data, int &direction) {
   }
   Node2 = Node1 + 2;
   char direction_char = data[Node1 + 1];
+//  cout << data << endl;
+//  cout << direction_char << endl;
   switch (direction_char) {
     case 'N': direction = 0;
       break;
@@ -185,7 +194,7 @@ void parseDirectionFromString(string &data, int &direction) {
     case 'W': direction = 3;
       break;
     default: cout << "not right direction given!" << endl;
-      break;
+      exit(EXIT_FAILURE);
   }
 
 }
@@ -247,6 +256,10 @@ void getBarrierCoordinatesFromLine(vector<Barrier *> &barriers, string &line) {
 }
 
 void getLaserCoordinatesFromLine(vector<Laser *> &lasers, string &line) {
+  if (line == "[]") {
+    cout << "no laser" << endl;
+    return;
+  }
   istringstream instr(line);
   string temp;
   int number;
@@ -272,6 +285,10 @@ void getLaserCoordinatesFromLine(vector<Laser *> &lasers, string &line) {
 }
 
 void getHolesCoordinatesFromLine(vector<Holes *> holes, string &line) {
+  if (line == "[]") {
+    cout << "no wormholes" << endl;
+    return;
+  }
   istringstream instr(line);
   string temp;
   int number;
@@ -462,6 +479,7 @@ void getStaticLaserPath(Laser *laser, vector<Barrier *> barriers, vector<Laser *
   int direction = laser->direction;
   int dx = 0;
   int dy = 0;
+
   switch (direction) {
     case N: dy = 1;
       break;
@@ -484,14 +502,14 @@ void getStaticLaserPath(Laser *laser, vector<Barrier *> barriers, vector<Laser *
     }
     laser_path.push_back(laser_extend);
   }
-  cout << "laser size = " << laser_path.size() << endl;
+//  cout << "laser size = " << laser_path.size() << endl;
 }
 
 /*
  * given static direction, get dynamic direction by timestamp
  * */
 int getDynamicDirection(int static_direction, int timestamp) {
-  int dynamic_direction = static_direction + timestamp % 4;
+  int dynamic_direction = (static_direction + timestamp) % 4;
   return dynamic_direction;
 }
 
@@ -506,6 +524,8 @@ void getDynamicLaserPath(Laser *laser, vector<Barrier *> &barriers, vector<Laser
 
   int dx = 0;
   int dy = 0;
+
+//  cout << dynamic_direction << endl;
   switch (dynamic_direction) {
     case N: dy = 1;
       break;
@@ -554,7 +574,9 @@ void findPathAstarWithLasers(Node *origin, Node *destination,
                              vector<Node *> &path) {
   // get laser path
   vector<Laser *> laser_path;
-  getStaticLaserPath(lasers[0], barriers, laser_path);
+  for (auto la : lasers) {
+    getStaticLaserPath(la, barriers, laser_path);
+  }
 
   // first version: only have minimum path
   priority_queue<Node *, vector<Node *>, greater<Node *>> open;
@@ -722,7 +744,7 @@ void findPathAstarWithDynamicLasersAndWormHoles(Node *origin,
 
   int cnt = 0;
   bool reach_flag = false;
-  while (!open.empty() && cnt < 2500) {
+  while (!open.empty() && cnt < 100000) {
     cnt++;
     Node *curr = open.top();
     open.pop();
@@ -741,8 +763,8 @@ void findPathAstarWithDynamicLasersAndWormHoles(Node *origin,
 
 //    cout << timestamp << endl;
     vector<Laser *> laser_path;
-    if (LASER_ENABLED) {
-      if (DYNAMIC_LASER_ENABLED) {
+    if (static_laser_enabled) {
+      if (dynamic_laser_enabled) {
         // in this case, laser path will change as timestamp
         for (Laser* la : lasers) {
           getDynamicLaserPath(la, barriers, laser_path, timestamp);
@@ -760,7 +782,7 @@ void findPathAstarWithDynamicLasersAndWormHoles(Node *origin,
     // then check wormholes
     // if reach to holes, it will suddenly go to the other side
     // as wormholes only appears every 3 seconds, check at these 3 multiples timestamps
-    if (WORMHOLES_ENABLED) {
+    if (wormholes_enabled) {
       if (timestamp % 3 == 0) {
         checkWormholes(holes, curr);
       }
@@ -810,8 +832,8 @@ void findPathAstarWithDynamicLasersAndWormHoles(Node *origin,
 
 }
 
-void generateLaserLog(vector<Laser* >lasers, vector<Barrier* >barriers, int end_time) {
-  string laser_log_file = "robot_routing/sample/laser_log.txt";
+void generateLaserLog(vector<Laser* >lasers, vector<Barrier* >barriers, int end_time, string problem_file) {
+  string laser_log_file = "../../robot_routing/" + problem_file + "/laser_log.txt";
   ofstream outfile(laser_log_file);
 
   if (!outfile.is_open()) {
@@ -836,7 +858,54 @@ void generateLaserLog(vector<Laser* >lasers, vector<Barrier* >barriers, int end_
   outfile.close();
 }
 
-int main() {
+
+void usage() {
+  cout << "Usage: shell [-fsdw]" << endl;
+  cout << "    -f  problem folder name, such as, sample, problem2, etc." << endl;
+  cout << "    -s  enable static laser." << endl;
+  cout << "    -d  enable dynamic laser." << endl;
+  cout << "    -d  enable wormholes." << endl;
+
+  exit(EXIT_FAILURE);
+}
+
+
+int main(int argc, char **argv) {
+  // arguments passed
+  string problem_name = "sample";
+  string input_problem_name = "";
+
+  // Parse the command line
+  char c;
+  while ((c = getopt(argc, argv, "hf:sdw")) != -1) {
+    switch (c) {
+      case 'h': // Prints help message
+        usage();
+        break;
+      case 'f': // problem file folder
+        input_problem_name = optarg;
+        break;
+      case 's': // static laser
+        static_laser_enabled = true;
+        break;
+      case 'd': // dynamic laser
+        dynamic_laser_enabled = true;
+        break;
+      case 'w': // wormholes
+        wormholes_enabled = true;
+        break;
+      default:
+        usage();
+
+    }
+  }
+  if (input_problem_name.length() > 0) {
+    problem_name = input_problem_name;
+  } else {
+    cout << "No input problem name, use sample instead." << endl;
+  }
+  cout << "Running " + problem_name + " ..." << endl;
+
 
   Node *origin = new Node();
   Node *destination = new Node();
@@ -846,18 +915,18 @@ int main() {
   vector<Node *> path;
   int current_time = 0;
 
-  const string problem_file = "robot_routing/sample/problem_test.txt";
-  const string solution_file = "robot_routing/sample/solution_test.txt";
+  const string problem_file = "../../robot_routing/" + problem_name + "/problem.txt";
+  const string solution_file = "../../robot_routing/" + problem_name + "/solution.txt";
 
   readInputData(problem_file, origin, destination, barriers, lasers, holes);
-  cout << "bar size = " << barriers.size() << endl;
+//  cout << "bar size = " << barriers.size() << endl;
 //    findPathAstarBarriersOnly(origin, destination, barriers, lasers, holes, path);
 //    findPathAstarWithLasers(origin, destination, barriers, lasers, holes, path);
 //    findPathAstarWithDynamicLasers(origin, destination, barriers, lasers, holes, path);
   findPathAstarWithDynamicLasersAndWormHoles(origin, destination, barriers, lasers, holes, path, current_time);
   writePathTofile(solution_file, path);
 
-  generateLaserLog(lasers, barriers, current_time);
+  generateLaserLog(lasers, barriers, current_time, problem_name);
 
   return 0;
 }

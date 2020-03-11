@@ -9,15 +9,10 @@ import numpy as np
 import imageio
 
 from read_laser_log import read_laser_log_by_timestamp
+from make_gif import make_gif_for_problem
 
 if __name__ == '__main__':
-    origin = [2, 3]
-    destination = [8, 1]
 
-    bounds = [0, -3, 15, 12]
-    barriers = [(8, 2), (7, 1), (4,5)]
-    # lasers = [(9, 5, 'N'), (9, 6, 'E')]
-    wormholes = [[(2, 2), (10, 1)]]
 
 
     # static solution
@@ -28,7 +23,24 @@ if __name__ == '__main__':
     # path = [(2, 3), (3, 3), (4, 3), (5, 3), (5, 2), (6, 2), (6, 1), (6, 0), (7, 0), (8, 0), (8, 1)]
     # path = [(2, 3), (2, 2), (3, 2), (3, 1), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (8, 1)]
     # path = [(2, 3), (2, 2), (3, 2), (4, 2), (5, 2), (6, 2), (6, 1), (6, 0), (7, 0), (8, 0), (8, 1)]
-    path = [(2, 3), (3, 3), (3, 2), (3, 1), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (8, 1)]
+    # path = [(2, 3), (3, 3), (3, 2), (3, 1), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (8, 1)]
+
+    problem_file = "problem2"
+    origin = [2, 3]
+    destination = [8, 1]
+    bounds = [-1, -3, 14, 7]
+    barriers = [(8, 2), (7, 1), (8, 0), (9, 2), (10, 2)]
+    wormholes = []
+    path = [(2, 3), (3, 3), (4, 3), (4, 2), (4, 1), (4, 0), (5, 0), (5, -1), (6, -1), (7, -1), (8, -1), (9, -1), (9, 0), (9, 1), (8, 1)]
+
+
+    # problem_file = "problem4"
+    # origin = [10, 4]
+    # destination = [0, 8]
+    # bounds = [-6, -6, 20, 15]
+    # barriers = [(4, 7), (9, 3), (9, 2), (10, 1), (11, 2), (11, 3), (12, 4)]
+    # wormholes = [[(10, 2), (0, 7)]]
+    # path = [(10, 4), (9, 4), (8, 4), (7, 4), (6, 4), (5, 4), (4, 4), (3, 4), (2, 4), (1, 4), (0, 4), (0, 5), (0, 6), (0, 7), (0, 8)] # problem4
 
     lasers_add = True
     wormholes_add = True
@@ -53,7 +65,8 @@ if __name__ == '__main__':
                 plt.scatter(barriers[i][0], barriers[i][1], c='black', s=100, marker=(5, 0))
 
         if lasers_add:
-            lasers = read_laser_log_by_timestamp(ts)
+            lasers = read_laser_log_by_timestamp(problem_file, ts)
+            # print(len(lasers))
             for i in range(len(lasers)):
                 if i == 0:
                     plt.scatter(lasers[i][0], lasers[i][1], c='red', s=30, marker=(5, 2), label = "lasers")
@@ -61,9 +74,10 @@ if __name__ == '__main__':
                     plt.scatter(lasers[i][0], lasers[i][1], c='red', s=30, marker=(5, 2))
 
         if wormholes_add:
+            plt.scatter([], [], c='hotpink', s=180, marker='o', label = "wormhole")
             if ts % 3 == 0:
                 for i in range(len(wormholes)):
-                    plt.scatter(wormholes[i][0], wormholes[i][1], c='hotpink', s=180, marker='o', label = "wormhole" + str(i))
+                    plt.scatter(wormholes[i][0], wormholes[i][1], c='hotpink', s=180, marker='o')
 
         sub_path = path[: ts + 1]
         for i in range(1, len(sub_path)):
@@ -74,11 +88,14 @@ if __name__ == '__main__':
 
         plt.xticks(x)
         plt.yticks(y)
-        plt.legend()
+        plt.legend(loc= 'lower left')
         plt.xlim((bounds[0], bounds[2]))
         plt.ylim((bounds[1], bounds[3]))
         plt.title("timestamp:" + str(ts))
         plt.grid(True)
-        # plt.show()
-        fig_name = "plots/" + str(ts) + ".png"
+
+        fig_name = problem_file + "/plots/" + str(ts) + ".png"
         plt.savefig(fig_name)
+
+        # plt.show()
+    make_gif_for_problem(problem_file, total_ts)

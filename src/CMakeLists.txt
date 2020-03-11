@@ -4,3 +4,4 @@ project(rideos_oa)
 set(CMAKE_CXX_STANDARD 14)
 
 add_executable(rideos_oa main.cpp record_laser_path.cpp)
+include_directories(../robot_routing)
