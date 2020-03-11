@@ -7,14 +7,17 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 
+from read_laser_log import read_laser_log_by_timestamp
+
 if __name__ == '__main__':
     origin = [2, 3]
     destination = [8, 1]
 
     bounds = [0, 0, 11, 8]
     barriers = [(8, 2), (7, 1), (4,5)]
-    lasers = [(9, 5, 'N'), (9, 6, 'E')]
+    # lasers = [(9, 5, 'N'), (9, 6, 'E')]
     wormholes = [[(2, 2), (10, 1)]]
+    lasers = read_laser_log_by_timestamp(0)
 
     # static solution
     # path = [(2, 3), (3, 3), (4, 3), (5, 3), (6, 3), (6, 2), (6, 1), (6, 0), (7, 0), (8, 0), (8, 1)]
@@ -23,7 +26,8 @@ if __name__ == '__main__':
     # solution with dynamic laser and wormholes
     # path = [(2, 3), (3, 3), (4, 3), (5, 3), (5, 2), (6, 2), (6, 1), (6, 0), (7, 0), (8, 0), (8, 1)]
     # path = [(2, 3), (2, 2), (3, 2), (3, 1), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (8, 1)]
-    path = [(2, 3), (2, 2), (3, 2), (4, 2), (5, 2), (6, 2), (6, 1), (6, 0), (7, 0), (8, 0), (8, 1)]
+    # path = [(2, 3), (2, 2), (3, 2), (4, 2), (5, 2), (6, 2), (6, 1), (6, 0), (7, 0), (8, 0), (8, 1)]
+    path = [(2, 3), (3, 3), (3, 2), (3, 1), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (8, 1)]
 
     lasers_add = True
     wormholes_add = True
