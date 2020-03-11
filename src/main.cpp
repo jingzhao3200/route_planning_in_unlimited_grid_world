@@ -170,7 +170,20 @@ void parseDirectionFromString(string &data, int &direction) {
         Node1++;
     }
     Node2 = Node1 + 2;
-    direction = data[Node1 + 1] - 'N';
+    char direction_char = data[Node1 + 1];
+    switch (direction_char) {
+      case 'N': direction = 0;
+        break;
+      case 'E': direction = 1;
+        break;
+      case 'S': direction = 2;
+        break;
+      case 'W': direction = 3;
+        break;
+      default: cout << "not right direction given!" << endl;
+        break;
+    }
+
 }
 
 /*
@@ -362,7 +375,7 @@ void findPathAstarBarriersOnly(Node *origin, Node *destination,
 
     int cnt = 0;
     bool reach_flag = false;
-    while (!open.empty() && cnt < 1500) {
+    while (!open.empty() && cnt < 20) {
         cnt++;
         Node *curr = open.top();
         open.pop();
@@ -459,7 +472,7 @@ void getStaticLaserPath(Laser* laser, vector<Barrier*> barriers, vector<Laser*> 
                  break;
     }
 
-    while (LOWER_BOUND < y && y < UPPER_BOUND) {
+    while (LOWER_BOUND < y && y < UPPER_BOUND && LOWER_BOUND < x && x < UPPER_BOUND) {
         x += dx;
         y += dy;
         Laser* laser_extend = new Laser(x, y, direction);
@@ -479,12 +492,14 @@ int getDynamicDirection(int static_direction, int timestamp) {
   return dynamic_direction;
 }
 
-void getDynamicLaserPath(Laser* laser, vector<Barrier*> barriers, vector<Laser*> laser_path, int timestamp) {
+void getDynamicLaserPath(Laser* laser, vector<Barrier*>& barriers, vector<Laser*>& laser_path, int timestamp) {
+//  cout << "get dynamic laser " << endl;
   laser_path.push_back(laser);
   int x = laser->x;
   int y = laser->y;
   int static_direction = laser->direction;
   int dynamic_direction = getDynamicDirection(static_direction, timestamp);
+//  cout << "dynamic_direction = " << dynamic_direction << endl;
 
   int dx = 0;
   int dy = 0;
@@ -501,7 +516,7 @@ void getDynamicLaserPath(Laser* laser, vector<Barrier*> barriers, vector<Laser*>
       break;
   }
 
-  while (LOWER_BOUND < y && y < UPPER_BOUND) {
+  while (LOWER_BOUND < y && y < UPPER_BOUND && LOWER_BOUND < x && x < UPPER_BOUND ) {
     x += dx;
     y += dy;
     Laser* laser_extend = new Laser(x, y, dynamic_direction);
@@ -510,7 +525,7 @@ void getDynamicLaserPath(Laser* laser, vector<Barrier*> barriers, vector<Laser*>
     }
     laser_path.push_back(laser_extend);
   }
-  cout << "laser size = " << laser_path.size() << endl;
+//  cout << "laser size = " << laser_path.size() << endl;
 }
 
 void findPathAstarWithLasers(Node *origin, Node *destination,
@@ -595,7 +610,6 @@ void findPathAstarWithDynamicLasers(Node *origin, Node *destination,
   // get laser path
   vector<Laser*> laser_path;
 
-
   // first version: only have minimum path
   priority_queue<Node *, vector<Node *>, greater<Node *>> open;
   unordered_set<pair<int, int>, pair_hash> closed;
@@ -606,13 +620,13 @@ void findPathAstarWithDynamicLasers(Node *origin, Node *destination,
   int timestamp = 0;
   int cnt = 0;
   bool reach_flag = false;
-  while (!open.empty() && cnt < 5000) {
+  while (!open.empty() && cnt < 2500) {
     cnt++;
     Node *curr = open.top();
     open.pop();
 //        curr->visited = true;
     closed.insert(make_pair(curr->x, curr->y));
-//        cout << "curr" << *curr << "fcost = " << curr->gcost << ", expand number = " << cnt << endl;
+//    cout << "curr" << *curr << "fcost = " << curr->gcost << ", expand number = " << cnt << endl;
     // check if reached
     if (*curr == *destination) {
       destination = curr;
@@ -622,6 +636,7 @@ void findPathAstarWithDynamicLasers(Node *origin, Node *destination,
     }
 
     timestamp++;
+    laser_path.clear();
     // in this case, laser path will change as timestamp
     getDynamicLaserPath(lasers[0], barriers, laser_path, timestamp);
 
@@ -631,7 +646,7 @@ void findPathAstarWithDynamicLasers(Node *origin, Node *destination,
       // Assume the grid itself is infinite in size, no need to check boundary condition
       // only check if obs
       Node *next = new Node(nx, ny);
-//            cout << *next << isBarrier(next, barriers) << endl;
+//      cout << *next << isBarrier(next, barriers) << endl;
       if (closed.count(make_pair(nx, ny)) < 1 && (!isBarrier(next, barriers)) && (!isLaser(next, laser_path))) {
         // update gcost and put to open list
         if (next->gcost > curr->gcost + 1) {
