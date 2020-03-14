@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def read_laser_log_by_timestamp(timestamp=0, plot_disabled = False):
-    laser_log_file = "sample/laser_log.txt"
+def read_laser_log_by_timestamp(problem_file = "sample", timestamp=0, plot_disabled = False):
+    laser_log_file = problem_file + "/laser_log.txt"
 
     with open(laser_log_file) as f:
         file_contents = f.readlines()
