@@ -3,7 +3,6 @@
 #include <vector>
 #include <unordered_set>
 #include <getopt.h>
-#include <stdlib.h>
 #include "robot_routing_env.h"
 #include "planner.h"
 
@@ -69,14 +68,13 @@ int main(int argc, char **argv) {
 
   const string problem_file = "../robot_routing/" + problem_name + "/problem.txt";
   const string solution_file = "../robot_routing/" + problem_name + "/solution.txt";
-  string laser_log_file = "../robot_routing/" + problem_name + "/laser_log.txt";
+  const string laser_log_file = "../robot_routing/" + problem_name + "/laser_log.txt";
 
   readInputData(problem_file, origin, destination, barriers, lasers, holes);
   findPathAstarWithDynamicLasersAndWormHoles(origin, destination, barriers, lasers, holes, path,
       current_time, static_laser_enabled_flag, dynamic_laser_enabled_flag, wormholes_enabled_flag);
 
   writePathTofile(solution_file, path);
-
   generateLaserLog(lasers, barriers, current_time, problem_name, laser_log_file);
 
   return 0;

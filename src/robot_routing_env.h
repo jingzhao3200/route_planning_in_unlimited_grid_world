@@ -21,8 +21,6 @@ const int MAX_COST = 1e6;
 const int LOWER_BOUND = -20;
 const int UPPER_BOUND = 20;
 
-
-
 enum laser_direction {
   N, E, S, W
 };
@@ -128,9 +126,7 @@ class Holes {
 int MahattanDistance(Node *n1, Node *n2);
 
 // parse string
-void parseIntFromString(string &data, int &number, int &Node1, int &Node2);
 void parseIntFromString(string &data, int &number);
-void parseDirectionFromString(string &data, int &direction, int &Node1, int &Node2);
 void parseDirectionFromString(string &data, int &direction);
 void readOnePair(ifstream &infile, Node *Node, string &data);
 void getBarrierCoordinatesFromLine(vector<Barrier *> &barriers, string &line);

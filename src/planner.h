@@ -3,8 +3,26 @@
 
 #include "robot_routing_env.h"
 
-void findPathAstarWithDynamicLasersAndWormHoles(Node *origin,
-                                                Node *destination,
+void findPathAstarBarriersOnly(Node *origin, Node *destination,
+                               vector<Barrier *> &barriers,
+                               vector<Laser *> &lasers,
+                               vector<Holes *> &holes,
+                               vector<Node *> &path);
+
+void findPathAstarWithLasers(Node *origin, Node *destination,
+                             vector<Barrier *> &barriers,
+                             vector<Laser *> &lasers,
+                             vector<Holes *> &holes,
+                             vector<Node *> &path);
+
+void findPathAstarWithDynamicLasers(Node *origin, Node *destination,
+                                    vector<Barrier *> &barriers,
+                                    vector<Laser *> &lasers,
+                                    vector<Holes *> &holes,
+                                    vector<Node *> &path);
+
+
+void findPathAstarWithDynamicLasersAndWormHoles(Node *origin, Node *destination,
                                                 vector<Barrier *> &barriers,
                                                 vector<Laser *> &lasers,
                                                 vector<Holes *> &holes,

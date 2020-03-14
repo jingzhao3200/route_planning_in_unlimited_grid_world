@@ -1,7 +1,9 @@
 #include "robot_routing_env.h"
 
 void findPathAstarBarriersOnly(Node *origin, Node *destination,
-                               vector<Barrier *> &barriers, vector<Laser *> &lasers, vector<Holes *> &holes,
+                               vector<Barrier *> &barriers,
+                               vector<Laser *> &lasers,
+                               vector<Holes *> &holes,
                                vector<Node *> &path) {
 
   // first version: only have minimum path
@@ -17,9 +19,8 @@ void findPathAstarBarriersOnly(Node *origin, Node *destination,
     cnt++;
     Node *curr = open.top();
     open.pop();
-//        curr->visited = true;
     closed.insert(make_pair(curr->x, curr->y));
-//        cout << "curr" << *curr << "fcost = " << curr->gcost << ", expand number = " << cnt << endl;
+
     // check if reached
     if (*curr == *destination) {
       destination = curr;
@@ -34,7 +35,6 @@ void findPathAstarBarriersOnly(Node *origin, Node *destination,
       // Assume the grid itself is infinite in size, no need to check boundary condition
       // only check if obs
       Node *next = new Node(nx, ny);
-//            cout << *next << isBarrier(next, barriers) << endl;
       if (closed.count(make_pair(nx, ny)) < 1 && (!isBarrier(next, barriers))) {
         // update gcost and put to open list
         if (next->gcost > curr->gcost + 1) {
@@ -42,8 +42,6 @@ void findPathAstarBarriersOnly(Node *origin, Node *destination,
           next->fcost = next->gcost + MahattanDistance(next, destination);
           next->prev = curr;
           open.push(next);
-
-          // cout << "add next : " << next;
         }
       }
     } // for i
@@ -70,7 +68,9 @@ void findPathAstarBarriersOnly(Node *origin, Node *destination,
 }
 
 void findPathAstarWithLasers(Node *origin, Node *destination,
-                             vector<Barrier *> &barriers, vector<Laser *> &lasers, vector<Holes *> &holes,
+                             vector<Barrier *> &barriers,
+                             vector<Laser *> &lasers,
+                             vector<Holes *> &holes,
                              vector<Node *> &path) {
   // get laser path
   vector<Laser *> laser_path;
@@ -91,9 +91,7 @@ void findPathAstarWithLasers(Node *origin, Node *destination,
     cnt++;
     Node *curr = open.top();
     open.pop();
-//        curr->visited = true;
     closed.insert(make_pair(curr->x, curr->y));
-//        cout << "curr" << *curr << "fcost = " << curr->gcost << ", expand number = " << cnt << endl;
     // check if reached
     if (*curr == *destination) {
       destination = curr;
@@ -108,7 +106,6 @@ void findPathAstarWithLasers(Node *origin, Node *destination,
       // Assume the grid itself is infinite in size, no need to check boundary condition
       // only check if obs
       Node *next = new Node(nx, ny);
-//            cout << *next << isBarrier(next, barriers) << endl;
       if (closed.count(make_pair(nx, ny)) < 1 && (!isBarrier(next, barriers)) && (!isLaser(next, laser_path))) {
         // update gcost and put to open list
         if (next->gcost > curr->gcost + 1) {
@@ -116,8 +113,6 @@ void findPathAstarWithLasers(Node *origin, Node *destination,
           next->fcost = next->gcost + MahattanDistance(next, destination);
           next->prev = curr;
           open.push(next);
-
-          // cout << "add next : " << next;
         }
       }
     } // for i
@@ -147,7 +142,9 @@ void findPathAstarWithLasers(Node *origin, Node *destination,
  * add timestamp in this function
  * */
 void findPathAstarWithDynamicLasers(Node *origin, Node *destination,
-                                    vector<Barrier *> &barriers, vector<Laser *> &lasers, vector<Holes *> &holes,
+                                    vector<Barrier *> &barriers,
+                                    vector<Laser *> &lasers,
+                                    vector<Holes *> &holes,
                                     vector<Node *> &path) {
   // get laser path
   vector<Laser *> laser_path;
@@ -168,7 +165,6 @@ void findPathAstarWithDynamicLasers(Node *origin, Node *destination,
     open.pop();
 //        curr->visited = true;
     closed.insert(make_pair(curr->x, curr->y));
-//    cout << "curr" << *curr << "fcost = " << curr->gcost << ", expand number = " << cnt << endl;
     // check if reached
     if (*curr == *destination) {
       destination = curr;
@@ -188,7 +184,6 @@ void findPathAstarWithDynamicLasers(Node *origin, Node *destination,
       // Assume the grid itself is infinite in size, no need to check boundary condition
       // only check if obs
       Node *next = new Node(nx, ny);
-//      cout << *next << isBarrier(next, barriers) << endl;
       if (closed.count(make_pair(nx, ny)) < 1 && (!isBarrier(next, barriers)) && (!isLaser(next, laser_path))) {
         // update gcost and put to open list
         if (next->gcost > curr->gcost + 1) {
@@ -196,8 +191,6 @@ void findPathAstarWithDynamicLasers(Node *origin, Node *destination,
           next->fcost = next->gcost + MahattanDistance(next, destination);
           next->prev = curr;
           open.push(next);
-
-          // cout << "add next : " << next;
         }
       }
     } // for i
@@ -233,12 +226,8 @@ void findPathAstarWithDynamicLasersAndWormHoles(Node *origin,
                                                 int &current_time,
                                                 bool static_laser_enabled,
                                                 bool dynamic_laser_enabled,
-                                                bool wormholes_enabled
-                                                ) {
+                                                bool wormholes_enabled) {
 
-
-
-  // first version: only have minimum path
   priority_queue<Node *, vector<Node *>, greater<Node *>> open;
   unordered_set<pair<int, int>, pair_hash> closed;
 
@@ -255,7 +244,6 @@ void findPathAstarWithDynamicLasersAndWormHoles(Node *origin,
     int timestamp = curr->timestamp + 1;
 
     closed.insert(make_pair(curr->x, curr->y));
-//    cout << "curr" << *curr << "fcost = " << curr->gcost << ", expand number = " << cnt << endl;
     // check if reached
     if (*curr == *destination) {
       destination = curr;
@@ -265,7 +253,6 @@ void findPathAstarWithDynamicLasersAndWormHoles(Node *origin,
       break;
     }
 
-//    cout << timestamp << endl;
     vector<Laser *> laser_path;
     if (static_laser_enabled) {
       if (dynamic_laser_enabled) {
@@ -298,7 +285,6 @@ void findPathAstarWithDynamicLasersAndWormHoles(Node *origin,
       // Assume the grid itself is infinite in size, no need to check boundary condition
       // only check if obs
       Node *next = new Node(nx, ny);
-//      cout << *next << isBarrier(next, barriers) << endl;
       if (closed.count(make_pair(nx, ny)) < 1 && (!isBarrier(next, barriers)) && (!isLaser(next, laser_path))) {
         // update gcost and put to open list
         if (next->gcost > curr->gcost + 1) {
@@ -307,8 +293,6 @@ void findPathAstarWithDynamicLasersAndWormHoles(Node *origin,
           next->prev = curr;
           next->timestamp = timestamp;
           open.push(next);
-
-          // cout << "add next : " << next;
         }
       }
     } // for i

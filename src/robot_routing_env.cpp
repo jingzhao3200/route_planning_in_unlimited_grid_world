@@ -1,18 +1,5 @@
 #include "robot_routing_env.h"
 
-void parseIntFromString(string &data, int &number, int &Node1, int &Node2) {
-  // get int from the read data
-  while (!isdigit(data[Node1])) {
-    Node1++;
-  }
-  Node2 = Node1;
-  while (isdigit(data[Node2])) {
-    Node2++;
-  }
-  string sub_data = data.substr(Node1, Node2 - Node1);
-  number = stoi(sub_data);
-}
-
 /*
  * parse integer from string
  * */
@@ -29,15 +16,6 @@ void parseIntFromString(string &data, int &number) {
   }
   string sub_data = data.substr(Node1, Node2 - Node1);
   number = stoi(sub_data);
-}
-
-void parseDirectionFromString(string &data, int &direction, int &Node1, int &Node2) {
-  // get int from the read data
-  while (data[Node1] != 39) { // ascii ' is 39
-    Node1++;
-  }
-  Node2 = Node1 + 2;
-  direction = data[Node1 + 1];
 }
 
 /*
@@ -251,7 +229,7 @@ bool isLaser(const Node *node, const vector<Laser *> &laser_path) {
 }
 
 void generateLaserLog(vector<Laser *> lasers, vector<Barrier *> barriers, int end_time,
-    string problem_file, string laser_log_file) {
+                      const string problem_file, const string laser_log_file) {
 
   ofstream outfile(laser_log_file);
 
