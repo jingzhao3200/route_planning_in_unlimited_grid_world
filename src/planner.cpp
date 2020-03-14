@@ -1,4 +1,5 @@
 #include "robot_routing_env.h"
+#include <algorithm>
 
 void findPathAstarBarriersOnly(Node *origin, Node *destination,
                                vector<Barrier *> &barriers,
@@ -318,4 +319,3 @@ void findPathAstarWithDynamicLasersAndWormHoles(Node *origin,
   }
 
 }
-

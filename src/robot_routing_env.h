@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <getopt.h>
 #include <unistd.h>
+#include <string.h>
 
 using namespace std;
 

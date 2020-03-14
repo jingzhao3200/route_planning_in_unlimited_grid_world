@@ -1,7 +1,11 @@
 #ifndef RIDEOS_OA_SRC_PLANNER_H_
 #define RIDEOS_OA_SRC_PLANNER_H_
-
+#include <iostream>     // std::cout
+#include <algorithm>    // std::reverse
+#include <vector>       // std::vector
 #include "robot_routing_env.h"
+
+using namespace std;
 
 void findPathAstarBarriersOnly(Node *origin, Node *destination,
                                vector<Barrier *> &barriers,
