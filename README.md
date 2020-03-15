@@ -39,7 +39,7 @@ Usage: shell [-fsdw]
 
 ## RESULTS:
 
-![grid world1](robot_routing/problem1/env.png)
+![grid world1](robot_routing/problem1/problem1.gif)
 
 ![grid world2](robot_routing/problem2/problem2.gif)
 
