@@ -11,14 +11,11 @@ this this a demo for A* based planning in a unlimited robot world.
    `docker run -it --entrypoint=/bin/bash -v $(pwd)/route_planning_in_unlimited_grid_world:/route_planning_in_unlimited_grid_world ubuntu:16.04`
 #### 2. Set up docker env
 
-`apt-get update`
+`cd route_planning_in_unlimited_grid_world/`
 
- `apt-get -y install cmake`
-
-`apt-get install -y build-essential`
+`./setup.sh`
    
 #### 3. Run in docker
-`cd route_planning_in_unlimited_grid_world/`
 
 `makedir build`
 
@@ -28,7 +25,7 @@ this this a demo for A* based planning in a unlimited robot world.
 
 `make`
 
-`./rideos_oa -f problem1`
+`./route_plan -f problem1`
 
 ```
 ./rideos_oa -h
