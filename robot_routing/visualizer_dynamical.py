@@ -11,9 +11,12 @@ import imageio
 from read_laser_log import read_laser_log_by_timestamp
 from make_gif import make_gif_for_problem
 
+barrier_size = 50
+laser_size = 10
+lasers_add = True
+wormholes_add = True
+
 if __name__ == '__main__':
-
-
 
     # static solution
     # path = [(2, 3), (3, 3), (4, 3), (5, 3), (6, 3), (6, 2), (6, 1), (6, 0), (7, 0), (8, 0), (8, 1)]
@@ -25,25 +28,41 @@ if __name__ == '__main__':
     # path = [(2, 3), (2, 2), (3, 2), (4, 2), (5, 2), (6, 2), (6, 1), (6, 0), (7, 0), (8, 0), (8, 1)]
     # path = [(2, 3), (3, 3), (3, 2), (3, 1), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (8, 1)]
 
-    problem_file = "problem2"
-    origin = [2, 3]
-    destination = [8, 1]
-    bounds = [-1, -3, 14, 7]
-    barriers = [(8, 2), (7, 1), (8, 0), (9, 2), (10, 2)]
-    wormholes = []
-    path = [(2, 3), (3, 3), (4, 3), (4, 2), (4, 1), (4, 0), (5, 0), (5, -1), (6, -1), (7, -1), (8, -1), (9, -1), (9, 0), (9, 1), (8, 1)]
+    # problem_file = "problem1"
+    # origin = [2, 3]
+    # destination = [8, 1]
+    # bounds = [-5, -8, 20, 15]
+    # barriers = [(8, 2), (7, 1), (8, 0), (9, 2), (10, 2)]
+    # wormholes = []
+    # path = [(2, 3), (3, 3), (4, 3), (5, 3), (6, 3), (6, 2), (6, 1), (6, 0), (6, -1), (7, -1), (8, -1), (9, -1), (9, 0), (9, 1), (8, 1)]
 
 
-    # problem_file = "problem4"
-    # origin = [10, 4]
-    # destination = [0, 8]
-    # bounds = [-6, -6, 20, 15]
-    # barriers = [(4, 7), (9, 3), (9, 2), (10, 1), (11, 2), (11, 3), (12, 4)]
-    # wormholes = [[(10, 2), (0, 7)]]
-    # path = [(10, 4), (9, 4), (8, 4), (7, 4), (6, 4), (5, 4), (4, 4), (3, 4), (2, 4), (1, 4), (0, 4), (0, 5), (0, 6), (0, 7), (0, 8)] # problem4
+    # problem_file = "problem2"
+    # origin = [2, 3]
+    # destination = [8, 1]
+    # bounds = [-5, -8, 20, 15]
+    # barriers = [(8, 2), (7, 1), (8, 0), (9, 2), (10, 2)]
+    # wormholes = []
+    # path = [(2, 3), (3, 3), (4, 3), (4, 2), (4, 1), (4, 0), (5, 0), (5, -1), (6, -1), (7, -1), (8, -1), (9, -1), (9, 0), (9, 1), (8, 1)]
 
-    lasers_add = True
-    wormholes_add = True
+    # problem_file = "problem3"
+    # origin = [2, 3]
+    # destination = [8, 1]
+    # bounds = [-1, -3, 14, 7]
+    # barriers = [(8, 2), (7, 1), (8, 0), (9, 2), (10, 2), (11, 2), (12, 1), (12, 0), (11, 0), (10, 0), (9, 0)]
+    # wormholes = []
+    # path = []
+
+
+    problem_file = "problem4"
+    origin = [10, 4]
+    destination = [0, 8]
+    bounds = [-6, -6, 20, 15]
+    barriers = [(4, 7), (9, 3), (9, 2), (10, 1), (11, 2), (11, 3), (12, 4)]
+    wormholes = [[(10, 2), (0, 7)]]
+    path = [(10, 4), (9, 4), (8, 4), (7, 4), (6, 4), (5, 4), (4, 4), (3, 4), (2, 4), (1, 4), (0, 4), (0, 5), (0, 6), (0, 7), (0, 8)] # problem4
+
+
 
     ts = 0
     total_ts = len(path)
@@ -60,18 +79,19 @@ if __name__ == '__main__':
         # plot barriers
         for i in range(len(barriers)):
             if i == 0:
-                plt.scatter(barriers[i][0], barriers[i][1], c='black', s=100, marker=(5, 0), label="barriers")
+                plt.scatter(barriers[i][0], barriers[i][1], c='black', s=barrier_size, marker=(5, 0), label="barriers")
             else:
-                plt.scatter(barriers[i][0], barriers[i][1], c='black', s=100, marker=(5, 0))
+                plt.scatter(barriers[i][0], barriers[i][1], c='black', s=barrier_size, marker=(5, 0))
 
         if lasers_add:
             lasers = read_laser_log_by_timestamp(problem_file, ts)
             # print(len(lasers))
             for i in range(len(lasers)):
                 if i == 0:
-                    plt.scatter(lasers[i][0], lasers[i][1], c='red', s=30, marker=(5, 2), label = "lasers")
+                    plt.scatter(lasers[i][0], lasers[i][1], c='red', s=laser_size, marker=(5, 2), label = "lasers")
                 else:
-                    plt.scatter(lasers[i][0], lasers[i][1], c='red', s=30, marker=(5, 2))
+                    plt.scatter(lasers[i][0], lasers[i][1], c='red', s=laser_size, marker=(5, 2))
+                    # print(lasers[i][0], lasers[i][1])
 
         if wormholes_add:
             plt.scatter([], [], c='hotpink', s=180, marker='o', label = "wormhole")
@@ -91,7 +111,7 @@ if __name__ == '__main__':
         plt.legend(loc= 'lower left')
         plt.xlim((bounds[0], bounds[2]))
         plt.ylim((bounds[1], bounds[3]))
-        plt.title("timestamp:" + str(ts))
+        plt.title(problem_file +" timestamp:" + str(ts))
         plt.grid(True)
 
         fig_name = problem_file + "/plots/" + str(ts) + ".png"
