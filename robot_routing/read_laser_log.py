@@ -14,7 +14,7 @@ def read_laser_log_by_timestamp(problem_file = "sample", timestamp=0, plot_disab
     list1 = str1.split(",")
     list2 = []
     for s in list1:
-        s = re.sub(r'[^\w\s]','',s)
+        s = re.sub(r'[^\w\s-]','',s)
         if len(s) > 0:
             list2.append(int(s))
 
